@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 const SYSTEM_PROMPT = `You are a brutally honest startup validator — think YC partner meets experienced indie maker.
 You give concise, actionable feedback without sugarcoating.
@@ -17,7 +15,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
-    const prompt = `Validate this startup idea:
+    const prompt = `${SYSTEM_PROMPT}
+
+Validate this startup idea:
 
 IDEA: ${idea}
 TARGET AUDIENCE: ${audience}
@@ -35,23 +35,18 @@ Respond with this exact JSON structure (no markdown, pure JSON):
   "brutalTake": "<one honest sentence — the thing they need to hear>"
 }`
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-      system: SYSTEM_PROMPT,
-    })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : ''
-    
     // Extract JSON — sometimes model wraps in backticks
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       throw new Error('No JSON in response')
     }
 
-    const result = JSON.parse(jsonMatch[0])
-    return NextResponse.json(result)
+    const parsed = JSON.parse(jsonMatch[0])
+    return NextResponse.json(parsed)
   } catch (err) {
     console.error('Validate error:', err)
     return NextResponse.json({ error: 'Validation failed' }, { status: 500 })
