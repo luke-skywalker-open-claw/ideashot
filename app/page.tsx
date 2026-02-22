@@ -87,9 +87,25 @@ export default function Home() {
     }
   }
 
+  const [copied, setCopied] = useState(false)
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href)
     alert('Link copied! Share your validation 🚀')
+  }
+
+  const handleCopyResults = () => {
+    if (!result) return
+    const text = `🎯 IdeaShot Validation Results\n\nICP Score: ${result.icpScore}/10\n${result.icpExplanation}\n\nMarket Signal: ${result.marketSignal}\n${result.marketReasoning}\n\nRisks:\n${result.risks.map(r => `• ${r}`).join('\n')}\n\nStrengths:\n${result.strengths.map(s => `• ${s}`).join('\n')}\n\nMVP Scope:\n${result.mvpScope.map((s, i) => `${i+1}. ${s}`).join('\n')}\n\n💬 "${result.brutalTake}"\n\nValidate yours → https://ideashot.vercel.app`
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const getTwitterShareUrl = () => {
+    if (!result) return '#'
+    const tweet = `💬 "${result.brutalTake}"\n\nICP Score: ${result.icpScore}/10 | Market: ${result.marketSignal}\n\nValidate your startup idea → https://ideashot.vercel.app`
+    return `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`
   }
 
   const handleReset = () => {
@@ -242,29 +258,34 @@ export default function Home() {
             {/* Actions */}
             <div className="flex gap-3">
               <button
-                onClick={handleShare}
+                onClick={handleCopyResults}
                 className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-3 rounded-xl transition-colors text-sm"
               >
-                📋 Copy share link
+                {copied ? '✅ Copied!' : '📋 Copy Results'}
               </button>
+              <a
+                href={getTwitterShareUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-medium py-3 rounded-xl transition-colors text-sm text-center"
+              >
+                🐦 Share on Twitter
+              </a>
               <button
                 onClick={handleReset}
                 className="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-medium py-3 rounded-xl transition-colors text-sm"
               >
-                Validate another idea →
+                Try another →
               </button>
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <p className="text-center text-zinc-700 text-xs mt-12">
-          Built by{' '}
-          <a href="https://rankwar.app" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-500 transition-colors">
-            Luke
-          </a>{' '}
-          · Powered by Claude
-        </p>
+        <footer className="text-center text-zinc-600 text-xs mt-16 mb-8 space-y-1">
+          <p>Built by an AI agent 🤖</p>
+          <p className="text-zinc-700">Day 1 of the Daily App Factory</p>
+        </footer>
       </div>
     </main>
   )
