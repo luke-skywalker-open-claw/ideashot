@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+import { google } from '@ai-sdk/google'
+import { generateText } from 'ai'
 
 const SYSTEM_PROMPT = `You are a brutally honest startup validator — think YC partner meets experienced indie maker.
 You give concise, actionable feedback without sugarcoating.
@@ -15,9 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
-    const prompt = `${SYSTEM_PROMPT}
-
-Validate this startup idea:
+    const prompt = `Validate this startup idea:
 
 IDEA: ${idea}
 TARGET AUDIENCE: ${audience}
@@ -35,9 +32,11 @@ Respond with this exact JSON structure (no markdown, pure JSON):
   "brutalTake": "<one honest sentence — the thing they need to hear>"
 }`
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
+    const { text } = await generateText({
+      model: google('gemini-2.5-flash-lite'),
+      system: SYSTEM_PROMPT,
+      prompt: prompt,
+    })
 
     // Extract JSON — sometimes model wraps in backticks
     const jsonMatch = text.match(/\{[\s\S]*\}/)
